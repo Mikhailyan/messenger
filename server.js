@@ -31,6 +31,13 @@ db.serialize(() => {
         avatar TEXT
     )`);
 });
+db.run(`CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id INTEGER,
+    receiver_id INTEGER,
+    text TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+)`);
 
 // Настройка загрузки картинок
 const storage = multer.diskStorage({
@@ -136,4 +143,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Сервер запущен на порту ${PORT}`);
+
 });
