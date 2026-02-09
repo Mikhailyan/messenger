@@ -116,6 +116,7 @@ io.on('connection', (socket) => {
         onlineUsers[userId] = socket.id;
         console.log(`User ${userId} is online`);
     });
+    
 
     // Отправка сообщения
     socket.on('send_message', (data) => {
@@ -128,6 +129,24 @@ io.on('connection', (socket) => {
             });
         }
     });
+    socket.on('send_message', (data) => {
+    const { toUserId, fromUserId, text } = data;
+
+    // Сохраняем в БД
+    const sql = `INSERT INTO messages (sender_id, receiver_id, text) VALUES (?, ?, ?)`;
+    db.run(sql, [fromUserId, toUserId, text], function(err) {
+        if (err) return console.error(err.message);
+
+        // Пересылаем получателю, если он онлайн
+        const recipientSocketId = onlineUsers[toUserId];
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('receive_message', {
+                from: fromUserId,
+                text: text
+            });
+        }
+    });
+});
 
     socket.on('disconnect', () => {
         // Удаляем из списка онлайн (можно оптимизировать)
@@ -145,3 +164,4 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`Сервер запущен на порту ${PORT}`);
 
 });
+
