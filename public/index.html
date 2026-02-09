@@ -146,36 +146,90 @@ async function searchUsers() {
     });
 }
 
-    // Отправка запроса
+// 1. Отправка запроса
 async function sendFriendRequest(toId) {
-    const res = await fetch('/friends/request', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ fromId: currentUser.id, toId: toId })
-    });
-    if (res.ok) alert("Запрос отправлен!");
+    console.log("Отправка запроса пользователю:", toId);
+    try {
+        const res = await fetch('/friends/request', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ fromId: currentUser.id, toId: toId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            alert("Запрос в друзья отправлен!");
+        } else {
+            alert(data.error || "Ошибка при отправке запроса");
+        }
+    } catch (e) {
+        console.error("Ошибка сети:", e);
+    }
 }
 
-// Проверка входящих заявок (вызывай её в enterApp)
+// 2. Проверка входящих заявок
 async function checkFriendRequests() {
-    const res = await fetch(`/friends/requests?userId=${currentUser.id}`);
-    const requests = await res.json();
-    const section = document.getElementById('friend-requests-section');
-    const list = document.getElementById('requests-list');
+    if (!currentUser) return;
     
-    if (requests.length > 0) {
-        section.classList.remove('hidden');
-        list.innerHTML = '';
-        requests.forEach(r => {
-            const div = document.createElement('div');
-            div.innerHTML = `
-                ${r.name} <button onclick="acceptFriend(${r.requestId})">Принять</button>
-            `;
-            list.appendChild(div);
-        });
-    } else {
-        section.classList.add('hidden');
+    try {
+        const res = await fetch(`/friends/requests?userId=${currentUser.id}`);
+        const requests = await res.json();
+        console.log("Входящие заявки:", requests);
+
+        const section = document.getElementById('friend-requests-section');
+        const list = document.getElementById('requests-list');
+        
+        if (requests.length > 0) {
+            section.classList.remove('hidden');
+            list.innerHTML = '';
+            requests.forEach(r => {
+                const div = document.createElement('div');
+                div.style = "display: flex; justify-content: space-between; align-items: center; padding: 5px; border-bottom: 1px solid #ddd;";
+                div.innerHTML = `
+                    <span><b>${r.name}</b> хочет в друзья</span>
+                    <button onclick="acceptFriend(${r.requestId})">Принять</button>
+                `;
+                list.appendChild(div);
+            });
+        } else {
+            section.classList.add('hidden');
+        }
+    } catch (e) {
+        console.error("Ошибка при проверке заявок:", e);
     }
+}
+
+// 3. Принятие заявки
+async function acceptFriend(requestId) {
+    console.log("Принятие заявки №:", requestId);
+    try {
+        const res = await fetch('/friends/accept', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ requestId: requestId })
+        });
+        if (res.ok) {
+            alert("Теперь вы друзья!");
+            checkFriendRequests(); // Обновляем список сразу
+        }
+    } catch (e) {
+        alert("Не удалось принять запрос");
+    }
+}
+
+// 4. НЕ ЗАБУДЬ: Вызывай проверку при входе
+function enterApp(user) {
+    currentUser = user;
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('main-screen').classList.remove('hidden');
+    
+    // ... твой код отрисовки профиля ...
+    
+    socket.emit('login', user.id);
+    
+    // Сразу проверяем заявки при входе
+    checkFriendRequests();
+    // И проверяем их каждые 30 секунд
+    setInterval(checkFriendRequests, 30000);
 }
 
 async function acceptFriend(requestId) {
@@ -272,5 +326,6 @@ document.getElementById('msg-input').addEventListener('keypress', function (e) {
 
 </body>
 </html>
+
 
 
