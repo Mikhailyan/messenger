@@ -170,8 +170,10 @@ db.run(`CREATE TABLE IF NOT EXISTS messages (
 
 // 2. Добавь API для загрузки истории сообщений
 app.get('/messages', (req, res) => {
-    const { myId, userId } = req.query;
-    // Выбираем сообщения, где отправитель я И получатель он, ИЛИ наоборот
+    // Приводим ID к числам для надежности
+    const myId = Number(req.query.myId);
+    const userId = Number(req.query.userId);
+
     const sql = `
         SELECT * FROM messages 
         WHERE (sender_id = ? AND receiver_id = ?) 
@@ -180,7 +182,7 @@ app.get('/messages', (req, res) => {
     
     db.all(sql, [myId, userId, userId, myId], (err, rows) => {
         if (err) return res.status(500).json([]);
-        res.json(rows);
+        res.json(rows); // Отправляем массив сообщений
     });
 });
 
@@ -207,5 +209,6 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`Сервер запущен на порту ${PORT}`);
 
 });
+
 
 
