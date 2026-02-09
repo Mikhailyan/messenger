@@ -62,7 +62,9 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
+        const socket = io({
+    transports: ['websocket', 'polling'] // Пробуем сначала быстрые веб-сокеты
+});
         let currentUser = null;
         let activeChatUserId = null;
 
@@ -187,4 +189,5 @@
         });
     </script>
 </body>
+
 </html>
