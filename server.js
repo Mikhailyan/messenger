@@ -119,20 +119,25 @@ app.post('/friends/request', async (req, res) => {
 });
 
 app.get('/friends/requests', async (req, res) => {
+    const userId = Number(req.query.userId); // Гарантируем, что это число
+    console.log("Проверка заявок для ID:", userId);
+    
     try {
         const result = await pool.query(
             `SELECT 
-                users.id AS "userId", 
-                users.name, 
-                users.avatar, 
-                friends.id AS "requestId" 
-             FROM friends 
-             JOIN users ON users.id = friends.user_id 
-             WHERE friends.friend_id = $1 AND friends.status = 'pending'`,
-            [req.query.userId]
+                u.id AS "userId", 
+                u.name, 
+                u.avatar, 
+                f.id AS "requestId" 
+             FROM friends f
+             JOIN users u ON u.id = f.user_id 
+             WHERE f.friend_id = $1 AND f.status = 'pending'`,
+            [userId]
         );
+        console.log("Найдено заявок:", result.rows.length);
         res.json(result.rows);
     } catch (e) {
+        console.error("Ошибка SQL при получении заявок:", e);
         res.status(500).json([]);
     }
 });
@@ -164,4 +169,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => console.log(`Мессенджер на Supabase запущен на порту ${PORT}`));
+
 
