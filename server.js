@@ -159,9 +159,53 @@ io.on('connection', (socket) => {
     });
 });
 
+// 1. Добавь создание таблицы (в блок db.serialize)
+db.run(`CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id INTEGER,
+    receiver_id INTEGER,
+    text TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`);
+
+// 2. Добавь API для загрузки истории сообщений
+app.get('/messages', (req, res) => {
+    const { myId, userId } = req.query;
+    // Выбираем сообщения, где отправитель я И получатель он, ИЛИ наоборот
+    const sql = `
+        SELECT * FROM messages 
+        WHERE (sender_id = ? AND receiver_id = ?) 
+           OR (sender_id = ? AND receiver_id = ?)
+        ORDER BY created_at ASC`;
+    
+    db.all(sql, [myId, userId, userId, myId], (err, rows) => {
+        if (err) return res.status(500).json([]);
+        res.json(rows);
+    });
+});
+
+// 3. Обнови обработчик socket.on('send_message')
+socket.on('send_message', (data) => {
+    const { toUserId, fromUserId, text } = data;
+    const sql = `INSERT INTO messages (sender_id, receiver_id, text) VALUES (?, ?, ?)`;
+    
+    db.run(sql, [fromUserId, toUserId, text], function(err) {
+        if (err) return;
+        
+        const recipientSocketId = onlineUsers[toUserId];
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('receive_message', {
+                from: fromUserId,
+                text: text
+            });
+        }
+    });
+});
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Сервер запущен на порту ${PORT}`);
 
 });
+
 
