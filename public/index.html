@@ -52,7 +52,10 @@
             <div id="user-info" style="display:flex; align-items:center; gap:10px;"></div>
             <button onclick="location.reload()" style="background:#cc0000;">Выйти</button>
         </div>
-
+<div id="friend-requests-section" class="hidden" style="background: #fff3cd; padding: 10px; border-bottom: 1px solid #ffeeba;">
+    <strong>Запросы в друзья:</strong>
+    <div id="requests-list"></div>
+</div>
         <div class="search-area">
             <input type="text" id="search-input" placeholder="Поиск людей...">
             <button onclick="searchUsers()">Найти</button>
@@ -122,22 +125,67 @@
     }
 
     // --- ЛОГИКА ПОИСКА ---
-    async function searchUsers() {
-        const q = document.getElementById('search-input').value;
-        const res = await fetch(`/search?q=${q}`);
-        const users = await res.json();
-        const container = document.getElementById('search-results');
-        container.innerHTML = '';
-        users.forEach(u => {
-            if (u.id == currentUser.id) return;
-            const div = document.createElement('div');
-            div.className = 'user-item';
-            div.innerHTML = `<img src="${u.avatar || ''}" class="avatar" onerror="this.src='https://ui-avatars.com/api/?name=${u.name}'"> <span>${u.name}</span>`;
-            div.onclick = () => startChat(u);
-            container.appendChild(div);
-        });
-    }
+async function searchUsers() {
+    const q = document.getElementById('search-input').value;
+    const res = await fetch(`/search?q=${q}`);
+    const users = await res.json();
+    const container = document.getElementById('search-results');
+    container.innerHTML = '';
+    
+    users.forEach(u => {
+        if (u.id == currentUser.id) return;
+        const div = document.createElement('div');
+        div.className = 'user-item';
+        div.innerHTML = `
+            <img src="${u.avatar || ''}" class="avatar" onerror="this.src='https://ui-avatars.com/api/?name=${u.name}'"> 
+            <span style="flex-grow:1">${u.name}</span>
+            <button onclick="sendFriendRequest(${u.id})">Добавить</button>
+        `;
+        // Убрали onclick со всего div, чтобы кнопка работала отдельно
+        container.appendChild(div);
+    });
+}
 
+    // Отправка запроса
+async function sendFriendRequest(toId) {
+    const res = await fetch('/friends/request', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ fromId: currentUser.id, toId: toId })
+    });
+    if (res.ok) alert("Запрос отправлен!");
+}
+
+// Проверка входящих заявок (вызывай её в enterApp)
+async function checkFriendRequests() {
+    const res = await fetch(`/friends/requests?userId=${currentUser.id}`);
+    const requests = await res.json();
+    const section = document.getElementById('friend-requests-section');
+    const list = document.getElementById('requests-list');
+    
+    if (requests.length > 0) {
+        section.classList.remove('hidden');
+        list.innerHTML = '';
+        requests.forEach(r => {
+            const div = document.createElement('div');
+            div.innerHTML = `
+                ${r.name} <button onclick="acceptFriend(${r.requestId})">Принять</button>
+            `;
+            list.appendChild(div);
+        });
+    } else {
+        section.classList.add('hidden');
+    }
+}
+
+async function acceptFriend(requestId) {
+    await fetch('/friends/accept', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ requestId })
+    });
+    checkFriendRequests(); // Обновить список
+}
     // --- ЛОГИКА ЧАТА (ИСПРАВЛЕННАЯ) ---
     async function startChat(user) {
         activeChatUserId = user.id;
@@ -224,4 +272,5 @@ document.getElementById('msg-input').addEventListener('keypress', function (e) {
 
 </body>
 </html>
+
 
