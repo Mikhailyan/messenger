@@ -3,73 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messenger MVP</title>
+    <title>Gemini Messenger</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .container { background: white; width: 100%; max-width: 500px; height: 90vh; display: flex; flex-direction: column; shadow: 0 2px 10px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; display: flex; justify-content: center; height: 100vh; }
+        .container { background: white; width: 100%; max-width: 500px; display: flex; flex-direction: column; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
         .hidden { display: none !important; }
         
-        /* Стили чата */
-        #chat-box { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; background: #e5ddd5; }
-        .msg { padding: 8px 15px; border-radius: 18px; max-width: 80%; word-wrap: break-word; font-size: 15px; position: relative; }
+        /* Авторизация */
+        .auth-form { padding: 40px 20px; text-align: center; }
+        input { width: 90%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        button { padding: 12px 20px; border: none; border-radius: 8px; background: #128c7e; color: white; cursor: pointer; font-weight: bold; }
+        button:hover { background: #075e54; }
+
+        /* Шапка и поиск */
+        .header { background: #075e54; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .search-box { padding: 10px; background: #f0f0f0; border-bottom: 1px solid #ddd; display: flex; gap: 5px; }
+        
+        /* Заявки в друзья */
+        #friend-requests-section { background: #fff3cd; padding: 15px; border-bottom: 1px solid #ffeeba; }
+        .request-item { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; background: white; padding: 8px; border-radius: 5px; }
+
+        /* Результаты поиска */
+        .user-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; gap: 10px; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #ccc; }
+
+        /* Чат */
+        #chat-box { flex-grow: 1; overflow-y: auto; padding: 15px; background: #e5ddd5; display: flex; flex-direction: column; gap: 8px; }
+        .msg { padding: 8px 12px; border-radius: 12px; max-width: 75%; font-size: 15px; line-height: 1.4; }
         .msg.me { background: #dcf8c6; align-self: flex-end; border-bottom-right-radius: 2px; }
         .msg.other { background: white; align-self: flex-start; border-bottom-left-radius: 2px; }
         
-        /* Стили интерфейса */
-        .header { background: #075e54; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #ccc; }
-        .search-area, .input-area { padding: 10px; background: #f0f0f0; display: flex; gap: 5px; }
-        input { padding: 10px; border: 1px solid #ddd; border-radius: 20px; flex-grow: 1; outline: none; }
-        button { background: #128c7e; color: white; border: none; padding: 10px 15px; border-radius: 20px; cursor: pointer; }
-        .user-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
-        .user-item:hover { background: #f9f9f9; }
+        .input-area { padding: 10px; background: #f0f0f0; display: flex; gap: 8px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="auth-screen" style="padding: 20px;">
-        <h2 id="auth-title">Вход в мессенджер</h2>
+    <div id="auth-screen" class="auth-form">
+        <h2 id="auth-title">Вход</h2>
         <div id="login-fields">
-            <input type="text" id="log-login" placeholder="Email или Телефон" style="width:90%; margin-bottom:10px;"><br>
-            <input type="password" id="log-pass" placeholder="Пароль" style="width:90%; margin-bottom:10px;"><br>
+            <input type="text" id="log-login" placeholder="Email или Телефон">
+            <input type="password" id="log-pass" placeholder="Пароль">
             <button onclick="login()">Войти</button>
-            <p>Нет аккаунта? <span style="color:blue; cursor:pointer;" onclick="toggleAuth(true)">Регистрация</span></p>
+            <p>Нет аккаунта? <a href="#" onclick="toggleAuth(true)">Создать</a></p>
         </div>
         <div id="reg-fields" class="hidden">
-            <input type="text" id="reg-name" placeholder="Имя" style="width:90%; margin-bottom:10px;"><br>
-            <input type="text" id="reg-phone" placeholder="Телефон" style="width:90%; margin-bottom:10px;"><br>
-            <input type="email" id="reg-email" placeholder="Email" style="width:90%; margin-bottom:10px;"><br>
-            <input type="password" id="reg-pass" placeholder="Пароль" style="width:90%; margin-bottom:10px;"><br>
-            <label>Аватар: <input type="file" id="reg-avatar"></label><br><br>
-            <button onclick="register()">Создать аккаунт</button>
-            <p>Уже есть аккаунт? <span style="color:blue; cursor:pointer;" onclick="toggleAuth(false)">Войти</span></p>
+            <input type="text" id="reg-name" placeholder="Ваше имя">
+            <input type="text" id="reg-phone" placeholder="Телефон">
+            <input type="email" id="reg-email" placeholder="Email">
+            <input type="password" id="reg-pass" placeholder="Пароль">
+            <div style="margin: 10px 0; font-size: 14px;">Аватарка: <input type="file" id="reg-avatar" style="width: auto;"></div>
+            <button onclick="register()">Зарегистрироваться</button>
+            <p>Уже есть аккаунт? <a href="#" onclick="toggleAuth(false)">Войти</a></p>
         </div>
     </div>
 
     <div id="main-screen" class="hidden" style="display: flex; flex-direction: column; height: 100%;">
         <div class="header">
-            <div id="user-info" style="display:flex; align-items:center; gap:10px;"></div>
-            <button onclick="location.reload()" style="background:#cc0000;">Выйти</button>
+            <div id="my-info" style="display: flex; align-items: center; gap: 10px;"></div>
+            <button onclick="location.reload()" style="background: #cc0000; padding: 5px 10px;">Выйти</button>
         </div>
-<div id="friend-requests-section" class="hidden" style="background: #fff3cd; padding: 15px; border: 1px solid #ffeeba; border-radius: 8px; margin-bottom: 10px;">
-    <strong style="display: block; margin-bottom: 10px; color: #856404;">Вам пришел запрос в друзья:</strong>
-    <div id="requests-list"></div>
-</div>
-        <div class="search-area">
-            <input type="text" id="search-input" placeholder="Поиск людей...">
+
+        <div id="friend-requests-section" class="hidden">
+            <small>Запросы в друзья:</small>
+            <div id="requests-list"></div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="search-input" placeholder="Поиск людей по имени...">
             <button onclick="searchUsers()">Найти</button>
         </div>
-        <div id="search-results" style="max-height: 150px; overflow-y: auto; background: white;"></div>
+        <div id="search-results" style="background: white; max-height: 200px; overflow-y: auto;"></div>
 
-        <div id="chat-header" style="padding: 10px; background: #eee; font-weight: bold; text-align: center;">
-            Выберите чат для начала общения
+        <div id="chat-header" style="background: #eee; padding: 10px; font-weight: bold; text-align: center;">
+            Выберите чат
         </div>
         
         <div id="chat-box"></div>
 
         <div class="input-area">
-            <input type="text" id="msg-input" placeholder="Введите сообщение...">
+            <input type="text" id="msg-input" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
             <button onclick="sendMessage()">➤</button>
         </div>
     </div>
@@ -81,13 +94,23 @@
     let currentUser = null;
     let activeChatUserId = null;
 
+    // Один слушатель на все время жизни приложения
+    socket.on('receive_message', (data) => {
+        console.log("Пришло сообщение от:", data.from);
+        if (activeChatUserId && Number(activeChatUserId) === Number(data.from)) {
+            addMessageToChat(data.text, 'other');
+        } else {
+            alert("Новое сообщение от другого пользователя!");
+        }
+    });
+
     function toggleAuth(isReg) {
         document.getElementById('login-fields').classList.toggle('hidden', isReg);
         document.getElementById('reg-fields').classList.toggle('hidden', !isReg);
         document.getElementById('auth-title').innerText = isReg ? 'Регистрация' : 'Вход';
     }
 
-    // --- ЛОГИКА АВТОРИЗАЦИИ ---
+    // --- Авторизация ---
     async function login() {
         const login = document.getElementById('log-login').value;
         const password = document.getElementById('log-pass').value;
@@ -117,219 +140,38 @@
         currentUser = user;
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('main-screen').classList.remove('hidden');
-        document.getElementById('user-info').innerHTML = `
+        document.getElementById('my-info').innerHTML = `
             <img src="${user.avatar || ''}" class="avatar" onerror="this.src='https://ui-avatars.com/api/?name=${user.name}'">
             <span>${user.name}</span>
         `;
         socket.emit('login', user.id);
+        
+        // Запускаем проверку друзей
+        checkFriendRequests();
+        setInterval(checkFriendRequests, 10000); 
     }
 
-    // --- ЛОГИКА ПОИСКА ---
-async function searchUsers() {
-    const q = document.getElementById('search-input').value;
-    const res = await fetch(`/search?q=${q}`);
-    const users = await res.json();
-    const container = document.getElementById('search-results');
-    container.innerHTML = '';
-    
-    users.forEach(u => {
-        if (u.id == currentUser.id) return;
-        const div = document.createElement('div');
-        div.className = 'user-item';
-        div.innerHTML = `
-            <img src="${u.avatar || ''}" class="avatar" onerror="this.src='https://ui-avatars.com/api/?name=${u.name}'"> 
-            <span style="flex-grow:1">${u.name}</span>
-            <button onclick="sendFriendRequest(${u.id})">Добавить</button>
-        `;
-        // Убрали onclick со всего div, чтобы кнопка работала отдельно
-        container.appendChild(div);
-    });
-}
+    // --- Друзья и Поиск ---
+    async function searchUsers() {
+        const q = document.getElementById('search-input').value;
+        const res = await fetch(`/search?q=${q}`);
+        const users = await res.json();
+        const container = document.getElementById('search-results');
+        container.innerHTML = '';
+        users.forEach(u => {
+            if (u.id == currentUser.id) return;
+            const div = document.createElement('div');
+            div.className = 'user-item';
+            div.innerHTML = `
+                <img src="${u.avatar || ''}" class="avatar" onerror="this.src='https://ui-avatars.com/api/?name=${u.name}'">
+                <span style="flex-grow:1" onclick="startChatWithSearch(${u.id}, '${u.name}')">${u.name}</span>
+                <button onclick="sendFriendRequest(${u.id})">+ Друг</button>
+            `;
+            container.appendChild(div);
+        });
+    }
 
-// 1. Отправка запроса
-async function sendFriendRequest(toId) {
-    console.log("Отправка запроса пользователю:", toId);
-    try {
+    async function sendFriendRequest(toId) {
         const res = await fetch('/friends/request', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ fromId: currentUser.id, toId: toId })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            alert("Запрос в друзья отправлен!");
-        } else {
-            alert(data.error || "Ошибка при отправке запроса");
-        }
-    } catch (e) {
-        console.error("Ошибка сети:", e);
-    }
-}
-
-// 2. Проверка входящих заявок
-async function checkFriendRequests() {
-    if (!currentUser) return;
-    
-    try {
-        const res = await fetch(`/friends/requests?userId=${currentUser.id}`);
-        const requests = await res.json();
-        console.log("Входящие заявки:", requests);
-
-        const section = document.getElementById('friend-requests-section');
-        const list = document.getElementById('requests-list');
-        
-        if (requests.length > 0) {
-            section.classList.remove('hidden');
-            list.innerHTML = '';
-            requests.forEach(r => {
-                const div = document.createElement('div');
-                div.style = "display: flex; justify-content: space-between; align-items: center; padding: 5px; border-bottom: 1px solid #ddd;";
-                div.innerHTML = `
-                    <span><b>${r.name}</b> хочет в друзья</span>
-                    <button onclick="acceptFriend(${r.requestId})">Принять</button>
-                `;
-                list.appendChild(div);
-            });
-        } else {
-            section.classList.add('hidden');
-        }
-    } catch (e) {
-        console.error("Ошибка при проверке заявок:", e);
-    }
-}
-
-// 3. Принятие заявки
-async function acceptFriend(requestId) {
-    console.log("Принимаем заявку с ID:", requestId);
-    try {
-        const res = await fetch('/friends/accept', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ requestId: Number(requestId) })
-        });
-        
-        if (res.ok) {
-            alert("Запрос принят!");
-            checkFriendRequests(); // Сразу перепроверяем список
-        }
-    } catch (e) {
-        console.error("Ошибка при принятии:", e);
-    }
-}
-
-// 4. НЕ ЗАБУДЬ: Вызывай проверку при входе
-function enterApp(user) {
-    currentUser = user;
-    document.getElementById('auth-screen').classList.add('hidden');
-    document.getElementById('main-screen').classList.remove('hidden');
-    
-    // ... твой код отрисовки профиля ...
-    
-    socket.emit('login', user.id);
-    
-    // Сразу проверяем заявки при входе
-    checkFriendRequests();
-    // И проверяем их каждые 30 секунд
-    setInterval(checkFriendRequests, 10000);
-}
-
-async function acceptFriend(requestId) {
-    await fetch('/friends/accept', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ requestId })
-    });
-    checkFriendRequests(); // Обновить список
-}
-    // --- ЛОГИКА ЧАТА (ИСПРАВЛЕННАЯ) ---
-    async function startChat(user) {
-        activeChatUserId = user.id;
-        document.getElementById('chat-header').innerText = `Чат с ${user.name}`;
-        document.getElementById('search-results').innerHTML = ''; // Скрыть поиск после выбора
-        
-        const box = document.getElementById('chat-box');
-        box.innerHTML = '<p style="text-align:center">Загрузка истории...</p>';
-
-        try {
-            // Запрашиваем историю
-            const res = await fetch(`/messages?myId=${currentUser.id}&userId=${user.id}`);
-            const messages = await res.json();
-            
-            box.innerHTML = ''; 
-            messages.forEach(msg => {
-                // ВАЖНО: Приводим всё к числам для сравнения
-                const isMe = Number(msg.sender_id) === Number(currentUser.id);
-                addMessageToChat(msg.text, isMe ? 'me' : 'other');
-            });
-        } catch (e) {
-            console.error("Ошибка загрузки истории", e);
-        }
-    }
-
-   function sendMessage() {
-    const input = document.getElementById('msg-input');
-    const text = input.value.trim();
-    
-    if (!text || !activeChatUserId) return;
-
-    // 1. Добавляем на экран у себя ОДИН раз
-    addMessageToChat(text, 'me');
-
-    // 2. Отправляем на сервер
-    socket.emit('send_message', {
-        toUserId: activeChatUserId,
-        fromUserId: currentUser.id,
-        text: text
-    });
-
-    input.value = ''; // Очищаем поле
-}
-
-    // Слушаем входящие
-    socket.on('receive_message', (data) => {
-        console.log("Получено сообщение:", data);
-        // Добавляем только если окно чата открыто именно с этим отправителем
-        if (activeChatUserId && Number(activeChatUserId) === Number(data.from)) {
-            addMessageToChat(data.text, 'other');
-        } else {
-            alert("Новое сообщение от другого пользователя!");
-        }
-    });
-
-    function addMessageToChat(text, type) {
-        const box = document.getElementById('chat-box');
-        const div = document.createElement('div');
-        div.className = `msg ${type}`;
-        div.textContent = text;
-        box.appendChild(div);
-        box.scrollTop = box.scrollHeight;
-    }
-
-socket.on('receive_message', (data) => {
-    console.log("Получено сообщение:", data);
-    
-    // Проверяем: открыт ли у нас сейчас чат именно с тем, кто прислал?
-    // Используем == для сравнения строки и числа
-    if (activeChatUserId && activeChatUserId == data.from) {
-        addMessageToChat(data.text, 'other');
-    } else {
-        // Если чат с ним не открыт, просто уведомляем
-        alert("Новое сообщение от пользователя!");
-    }
-});
-    // Отправка по нажатию Enter
-document.getElementById('msg-input').addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') {
-        sendMessage();
-    }
-});
-</script>
-
-</body>
-</html>
-
-
-
-
-
-
+            headers: {'Content-Type': 'application
