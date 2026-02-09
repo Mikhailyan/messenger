@@ -200,19 +200,20 @@ async function checkFriendRequests() {
 
 // 3. Принятие заявки
 async function acceptFriend(requestId) {
-    console.log("Принятие заявки №:", requestId);
+    console.log("Принимаем заявку с ID:", requestId);
     try {
         const res = await fetch('/friends/accept', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ requestId: requestId })
+            body: JSON.stringify({ requestId: Number(requestId) })
         });
+        
         if (res.ok) {
-            alert("Теперь вы друзья!");
-            checkFriendRequests(); // Обновляем список сразу
+            alert("Запрос принят!");
+            checkFriendRequests(); // Сразу перепроверяем список
         }
     } catch (e) {
-        alert("Не удалось принять запрос");
+        console.error("Ошибка при принятии:", e);
     }
 }
 
@@ -326,6 +327,7 @@ document.getElementById('msg-input').addEventListener('keypress', function (e) {
 
 </body>
 </html>
+
 
 
 
