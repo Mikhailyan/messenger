@@ -163,23 +163,24 @@
         }
     }
 
-    function sendMessage() {
-        const input = document.getElementById('msg-input');
-        const text = input.value.trim();
-        if (!text || !activeChatUserId) return;
+   function sendMessage() {
+    const input = document.getElementById('msg-input');
+    const text = input.value.trim();
+    
+    if (!text || !activeChatUserId) return;
 
-        // 1. Отображаем у себя
-        addMessageToChat(text, 'me');
+    // 1. Добавляем на экран у себя ОДИН раз
+    addMessageToChat(text, 'me');
 
-        // 2. Отправляем на сервер
-        socket.emit('send_message', {
-            toUserId: activeChatUserId,
-            fromUserId: currentUser.id,
-            text: text
-        });
+    // 2. Отправляем на сервер
+    socket.emit('send_message', {
+        toUserId: activeChatUserId,
+        fromUserId: currentUser.id,
+        text: text
+    });
 
-        input.value = '';
-    }
+    input.value = ''; // Очищаем поле
+}
 
     // Слушаем входящие
     socket.on('receive_message', (data) => {
@@ -200,7 +201,27 @@
         box.appendChild(div);
         box.scrollTop = box.scrollHeight;
     }
+
+socket.on('receive_message', (data) => {
+    console.log("Получено сообщение:", data);
+    
+    // Проверяем: открыт ли у нас сейчас чат именно с тем, кто прислал?
+    // Используем == для сравнения строки и числа
+    if (activeChatUserId && activeChatUserId == data.from) {
+        addMessageToChat(data.text, 'other');
+    } else {
+        // Если чат с ним не открыт, просто уведомляем
+        alert("Новое сообщение от пользователя!");
+    }
+});
+    // Отправка по нажатию Enter
+document.getElementById('msg-input').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        sendMessage();
+    }
+});
 </script>
 
 </body>
 </html>
+
