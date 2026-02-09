@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мой Мессенджер</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .hidden { display: none; }
+        .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; vertical-align: middle; }
+        .user-card { border: 1px solid #ddd; padding: 10px; margin: 5px 0; display: flex; align-items: center; cursor: pointer; }
+        .user-card:hover { background: #f0f0f0; }
+        #chat-box { height: 300px; border: 1px solid #ccc; overflow-y: scroll; padding: 10px; margin-bottom: 10px; display: flex; flex-direction: column; }
+        .msg { padding: 8px 12px; margin: 5px; border-radius: 10px; max-width: 70%; }
+        .msg.me { background: #dcf8c6; align-self: flex-end; }
+        .msg.other { background: #eee; align-self: flex-start; }
+        .link-btn { color: blue; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-screen">
+        <h2 id="auth-title">Вход</h2>
+        
+        <div id="login-form">
+            <input type="text" id="login-login" placeholder="Email или Телефон"><br><br>
+            <input type="password" id="login-pass" placeholder="Пароль"><br><br>
+            <button onclick="login()">Войти</button>
+            <p>Нет аккаунта? <span class="link-btn" onclick="toggleAuth()">Зарегистрироваться</span></p>
+        </div>
+
+        <div id="reg-form" class="hidden">
+            <input type="text" id="reg-name" placeholder="Имя"><br><br>
+            <input type="text" id="reg-phone" placeholder="Телефон"><br><br>
+            <input type="email" id="reg-email" placeholder="Email"><br><br>
+            <input type="password" id="reg-pass" placeholder="Пароль"><br><br>
+            <label>Аватарка: <input type="file" id="reg-avatar"></label><br><br>
+            <button onclick="register()">Зарегистрироваться</button>
+            <p>Есть аккаунт? <span class="link-btn" onclick="toggleAuth()">Войти</span></p>
+        </div>
+    </div>
+
+    <div id="main-screen" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div id="my-profile"></div>
+            <button onclick="logout()">Выйти</button>
+        </div>
+        
+        <hr>
+        <h4>Поиск людей</h4>
+        <input type="text" id="search-input" placeholder="Введите имя...">
+        <button onclick="searchUsers()">Найти</button>
+        <div id="search-results"></div>
+
+        <hr>
+        <h4 id="chat-with">Чат</h4>
+        <div id="chat-box"></div>
+        <div style="display: flex;">
+            <input type="text" id="msg-input" placeholder="Сообщение..." style="flex-grow: 1;">
+            <button onclick="sendMessage()">Отправить</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let currentUser = null;
+        let activeChatUserId = null;
+
+        // Переключение между входом и регистрацией
+        function toggleAuth() {
+            document.getElementById('login-form').classList.toggle('hidden');
+            document.getElementById('reg-form').classList.toggle('hidden');
+            const title = document.getElementById('auth-title');
+            title.innerText = title.innerText === 'Вход' ? 'Регистрация' : 'Вход';
+        }
+
+        // 1. РЕГИСТРАЦИЯ
+        async function register() {
+            const formData = new FormData();
+            formData.append('name', document.getElementById('reg-name').value);
+            formData.append('phone', document.getElementById('reg-phone').value);
+            formData.append('email', document.getElementById('reg-email').value);
+            formData.append('password', document.getElementById('reg-pass').value);
+            formData.append('avatar', document.getElementById('reg-avatar').files[0]);
+
+            const res = await fetch('/register', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) {
+                enterApp(data.user);
+            } else {
+                alert(data.error);
+            }
+        }
+
+        // 2. ВХОД
+        async function login() {
+            const loginVal = document.getElementById('login-login').value;
+            const passVal = document.getElementById('login-pass').value;
+
+            const res = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ login: loginVal, password: passVal })
+            });
+            const data = await res.json();
+            if (data.success) {
+                enterApp(data.user);
+            } else {
+                alert(data.error);
+            }
+        }
+
+        // Вход в приложение (общая функция)
+        function enterApp(user) {
+            currentUser = user;
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('main-screen').classList.remove('hidden');
+            
+            const avatarHtml = user.avatar ? `<img src="${user.avatar}" class="avatar">` : '';
+            document.getElementById('my-profile').innerHTML = `${avatarHtml} <b>${user.name}</b>`;
+            
+            // Сообщаем серверу, что мы онлайн
+            socket.emit('login', currentUser.id);
+        }
+
+        function logout() {
+            location.reload(); // Самый простой способ выйти - перезагрузить страницу
+        }
+
+        // 3. ПОИСК
+        async function searchUsers() {
+            const query = document.getElementById('search-input').value;
+            const res = await fetch(`/search?q=${query}`);
+            const users = await res.json();
+            
+            const container = document.getElementById('search-results');
+            container.innerHTML = '';
+            users.forEach(user => {
+                if (user.id === currentUser.id) return;
+                const div = document.createElement('div');
+                div.className = 'user-card';
+                div.innerHTML = `<img src="${user.avatar || ''}" class="avatar"> <span>${user.name}</span>`;
+                div.onclick = () => startChat(user);
+                container.appendChild(div);
+            });
+        }
+
+        // 4. ЧАТ
+        function startChat(user) {
+            activeChatUserId = user.id;
+            document.getElementById('chat-with').innerText = `Чат с ${user.name}`;
+            document.getElementById('chat-box').innerHTML = ''; 
+            // Тут в будущем можно подгружать историю сообщений из БД
+        }
+
+        function sendMessage() {
+            if (!activeChatUserId) return alert("Выберите собеседника!");
+            const text = document.getElementById('msg-input').value;
+            if(!text) return;
+
+            addMessageToChat(text, 'me');
+
+            socket.emit('send_message', {
+                toUserId: activeChatUserId,
+                fromUserId: currentUser.id,
+                text: text
+            });
+            document.getElementById('msg-input').value = '';
+        }
+
+        function addMessageToChat(text, type) {
+            const div = document.createElement('div');
+            div.className = `msg ${type}`;
+            div.innerText = text;
+            const box = document.getElementById('chat-box');
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight; // Прокрутка вниз
+        }
+
+        socket.on('receive_message', (data) => {
+            if (activeChatUserId === data.from) {
+                addMessageToChat(data.text, 'other');
+            } else {
+                // Можно добавить уведомление (красная точка)
+                alert('Вам сообщение!');
+            }
+        });
+    </script>
+</body>
+</html>
