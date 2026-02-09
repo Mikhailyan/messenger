@@ -119,11 +119,22 @@ app.post('/friends/request', async (req, res) => {
 });
 
 app.get('/friends/requests', async (req, res) => {
-    const result = await pool.query(
-        'SELECT users.id, users.name, users.avatar, friends.id as "requestId" FROM friends JOIN users ON users.id = friends.user_id WHERE friends.friend_id = $1 AND friends.status = \'pending\'',
-        [req.query.userId]
-    );
-    res.json(result.rows);
+    try {
+        const result = await pool.query(
+            `SELECT 
+                users.id AS "userId", 
+                users.name, 
+                users.avatar, 
+                friends.id AS "requestId" 
+             FROM friends 
+             JOIN users ON users.id = friends.user_id 
+             WHERE friends.friend_id = $1 AND friends.status = 'pending'`,
+            [req.query.userId]
+        );
+        res.json(result.rows);
+    } catch (e) {
+        res.status(500).json([]);
+    }
 });
 
 app.post('/friends/accept', async (req, res) => {
@@ -153,3 +164,4 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => console.log(`Мессенджер на Supabase запущен на порту ${PORT}`));
+
