@@ -148,10 +148,34 @@
         }
 
         // 4. ЧАТ
-        function startChat(user) {
-            activeChatUserId = user.id;
-            document.getElementById('chat-with').innerText = `Чат с ${user.name}`;
-            document.getElementById('chat-box').innerHTML = ''; 
+        // Загрузка истории чата
+async function startChat(user) {
+    activeChatUserId = user.id;
+    document.getElementById('chat-with').innerText = `Чат с ${user.name}`;
+    
+    // Очищаем окно и загружаем историю
+    const box = document.getElementById('chat-box');
+    box.innerHTML = '<p style="text-align:center">Загрузка сообщений...</p>';
+
+    const res = await fetch(`/messages?myId=${currentUser.id}&userId=${user.id}`);
+    const messages = await res.json();
+    
+    box.innerHTML = ''; 
+    messages.forEach(msg => {
+        const type = (msg.sender_id == currentUser.id) ? 'me' : 'other';
+        addMessageToChat(msg.text, type);
+    });
+}
+
+// Улучшенная функция добавления сообщения (с защитой от XSS)
+function addMessageToChat(text, type) {
+    const div = document.createElement('div');
+    div.className = `msg ${type}`;
+    div.textContent = text; // Используем textContent для безопасности
+    const box = document.getElementById('chat-box');
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight; 
+}
             // Тут в будущем можно подгружать историю сообщений из БД
         }
 
@@ -191,3 +215,4 @@
 </body>
 
 </html>
+
