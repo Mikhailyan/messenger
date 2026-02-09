@@ -40,6 +40,15 @@ db.serialize(() => {
     )`);
 });
 
+db.run(`CREATE TABLE IF NOT EXISTS friends (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    friend_id INTEGER,
+    status TEXT DEFAULT 'pending', 
+    FOREIGN KEY(user_id) REFERENCES users(id),
+    FOREIGN KEY(friend_id) REFERENCES users(id)
+)`);
+
 // --- НАСТРОЙКА ЗАГРУЗКИ ФАЙЛОВ ---
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, 'uploads/'),
@@ -146,8 +155,39 @@ io.on('connection', (socket) => {
     });
 });
 
+// Отправить запрос в друзья
+app.post('/friends/request', (req, res) => {
+    const { fromId, toId } = req.body;
+    db.run(`INSERT INTO friends (user_id, friend_id) VALUES (?, ?)`, [fromId, toId], (err) => {
+        if (err) return res.status(400).json({ error: "Запрос уже отправлен" });
+        res.json({ success: true });
+    });
+});
+
+// Получить список входящих заявок
+app.get('/friends/requests', (req, res) => {
+    const userId = req.query.userId;
+    const sql = `
+        SELECT users.id, users.name, users.avatar, friends.id as requestId
+        FROM friends 
+        JOIN users ON users.id = friends.user_id 
+        WHERE friends.friend_id = ? AND friends.status = 'pending'`;
+    
+    db.all(sql, [userId], (err, rows) => {
+        res.json(rows || []);
+    });
+});
+
+// Принять заявку
+app.post('/friends/accept', (req, res) => {
+    const { requestId } = req.body;
+    db.run(`UPDATE friends SET status = 'accepted' WHERE id = ?`, [requestId], (err) => {
+        res.json({ success: true });
+    });
+});
 // Запуск сервера
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Сервер летит на порту ${PORT}`);
 });
+
