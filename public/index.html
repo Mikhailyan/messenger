@@ -230,7 +230,7 @@ function enterApp(user) {
     // Сразу проверяем заявки при входе
     checkFriendRequests();
     // И проверяем их каждые 30 секунд
-    setInterval(checkFriendRequests, 30000);
+    setInterval(checkFriendRequests, 10000);
 }
 
 async function acceptFriend(requestId) {
@@ -327,6 +327,7 @@ document.getElementById('msg-input').addEventListener('keypress', function (e) {
 
 </body>
 </html>
+
 
 
 
